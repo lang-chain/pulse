@@ -110,7 +110,7 @@ def generate_response(prompt):
     )
     print("#################")
     print()
-    print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
+    print(f"{prompt} --> {response['outputs'][0]['outputs'][0]['results']['message']['data']['text']}")
     print("#################")
     try:
         # logging.info(f"answer: {response['result']['answer']}")
