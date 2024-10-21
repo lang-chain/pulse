@@ -101,7 +101,7 @@ def run_flow(message: str,
     return response.json()
 
 def generate_response(prompt):
-    logging.info(f"{prompt}")
+    # logging.info(f"{prompt}")
     # inputs = {"question": prompt}
     response = run_flow(prompt,
         endpoint=ENDPOINT,
@@ -109,8 +109,8 @@ def generate_response(prompt):
         application_token="AstraCS:tKnZHgecDdRdvMdihJMcrqhI:2708b1c53f56ba0f9d6c6e526f026abd7b60746af3b71dfe15b385c06b9979d0"
     )
     print("#################")
-    print()
-    print(f"{prompt} --> {response['outputs'][0]['outputs'][0]['results']['message']['data']['text']}")
+    print(prompt)
+    print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
     print("#################")
     try:
         # logging.info(f"answer: {response['result']['answer']}")
