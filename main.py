@@ -8,6 +8,7 @@ import streamlit as st
 # from streamlit_chat import message
 import streamlit as st
 from langflow.load import run_flow_from_json
+import base64
 
 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=log_format, stream=sys.stdout, level=logging.INFO)
@@ -61,15 +62,23 @@ def main():
             message_placeholder = st.empty()
             with st.spinner(text="Thinking..."):
                 assistant_response = generate_response(prompt)
-                message_placeholder.write(assistant_response)
-                # Add assistant response to chat history
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": assistant_response,
-                        "avatar": f"{BASE_AVATAR_URL}/bartender-64px.png",
-                    }
+                md = text_to_speech(assistant_response)
+                st.markdown(
+                    md,
+                    unsafe_allow_html=True,
                 )
+                # st.write("# Auto-playing Audio!")
+
+                # autoplay_audio_url("http://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3")
+                # message_placeholder.write(assistant_response)
+                # Add assistant response to chat history
+                # st.session_state.messages.append(
+                #     {
+                #         "role": "assistant",
+                #         "content": assistant_response,
+                #         "avatar": f"{BASE_AVATAR_URL}/bartender-64px.png",
+                #     }
+                # )
 
 def run_flow(message: str,
              endpoint: str,
@@ -108,10 +117,10 @@ def generate_response(prompt):
         tweaks=TWEAKS,
         application_token="AstraCS:tKnZHgecDdRdvMdihJMcrqhI:2708b1c53f56ba0f9d6c6e526f026abd7b60746af3b71dfe15b385c06b9979d0"
     )
-    print("#################")
-    print(prompt)
-    print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
-    print("#################")
+    # print("#################")
+    # print(prompt)
+    # print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
+    # print("#################")
     try:
         # logging.info(f"answer: {response['result']['answer']}")
         return response['outputs'][0]['outputs'][0]['results']['message']['data']['text']
@@ -119,6 +128,40 @@ def generate_response(prompt):
     except Exception as exc:
         # logging.error(f"error: {response}")
         return "Sorry, there was a problem finding an answer for you."
+
+def autoplay_audio_url(url: str):
+    b64 = base64.b64encode(requests.get(url).content)
+    md = f"""
+            <audio controls autoplay="true">
+            <source src="{url}" type="audio/mp3">
+            </audio>
+            """
+    st.markdown(
+        md,
+        unsafe_allow_html=True,
+    )
+def text_to_speech(b64):
+    source_type = "audio/flac"
+    md = f"""
+            <audio controls autoplay="true">
+            <source src="data:{source_type};base64,{b64}" type="{source_type}">
+            </audio>
+            """
+    return md
+
+def autoplay_audio(file_path: str):
+    with open(file_path, "rb") as f:
+        data = f.read()
+        b64 = base64.b64encode(data).decode()
+        md = f"""
+            <audio controls autoplay="true">
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            </audio>
+            """
+        st.markdown(
+            md,
+            unsafe_allow_html=True,
+        )
 
 if __name__ == "__main__":
     main()
