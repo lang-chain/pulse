@@ -101,6 +101,7 @@ def run_flow(message: str,
         "output_type": output_type,
         "input_type": input_type,
     }
+    print(message)
     headers = None
     if tweaks:
         payload["tweaks"] = tweaks
