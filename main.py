@@ -35,6 +35,7 @@ BASE_AVATAR_URL = (
     "https://raw.githubusercontent.com/garystafford-aws/static-assets/main/static"
 )
 
+
 def main():
     st.set_page_config(page_title="Virtual Bartender")
     st.markdown("##### Welcome to the Virtual Bartender")
