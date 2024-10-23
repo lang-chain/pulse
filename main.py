@@ -10,6 +10,11 @@ import streamlit as st
 from langflow.load import run_flow_from_json
 import base64
 
+import toml
+
+with open('secrets.toml', 'r') as f:
+    config = toml.load(f)
+
 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=log_format, stream=sys.stdout, level=logging.INFO)
 
@@ -62,23 +67,40 @@ def main():
             message_placeholder = st.empty()
             with st.spinner(text="Thinking..."):
                 assistant_response = generate_response(prompt)
-                md = text_to_speech(assistant_response)
-                st.markdown(
-                    md,
-                    unsafe_allow_html=True,
-                )
-                # st.write("# Auto-playing Audio!")
+                handle_response(message_placeholder, assistant_response)
 
-                # autoplay_audio_url("http://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3")
-                # message_placeholder.write(assistant_response)
-                # Add assistant response to chat history
-                # st.session_state.messages.append(
-                #     {
-                #         "role": "assistant",
-                #         "content": assistant_response,
-                #         "avatar": f"{BASE_AVATAR_URL}/bartender-64px.png",
-                #     }
-                # )
+def isBase64(sb):
+    try:
+        if isinstance(sb, str):
+            # If there's any unicode here, an exception will be thrown and the function will return false
+            sb_bytes = bytes(sb, 'ascii')
+        elif isinstance(sb, bytes):
+            sb_bytes = sb
+        else:
+            raise ValueError("Argument must be string or bytes")
+        return base64.b64encode(base64.b64decode(sb_bytes)) == sb_bytes
+    except Exception:
+        return False
+
+def handle_response(message_placeholder, assistant_response):
+    b64 = isBase64(assistant_response)
+    if b64:
+        md = text_to_speech(assistant_response)
+        st.markdown(
+            md,
+            unsafe_allow_html=True,
+        )
+    else:
+        message_placeholder.write(assistant_response)
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": assistant_response,
+                "avatar": f"{BASE_AVATAR_URL}/bartender-64px.png",
+            }
+        )
+
+
 
 def run_flow(message: str,
              endpoint: str,
@@ -116,7 +138,7 @@ def generate_response(prompt):
     response = run_flow(prompt,
         endpoint=ENDPOINT,
         tweaks=TWEAKS,
-        application_token="AstraCS:tKnZHgecDdRdvMdihJMcrqhI:2708b1c53f56ba0f9d6c6e526f026abd7b60746af3b71dfe15b385c06b9979d0"
+        application_token=config['langflow']['token']
     )
     # print("#################")
     # print(prompt)
