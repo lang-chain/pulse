@@ -10,11 +10,6 @@ import streamlit as st
 from langflow.load import run_flow_from_json
 import base64
 
-import toml
-
-with open('secrets.toml', 'r') as f:
-    config = toml.load(f)
-
 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=log_format, stream=sys.stdout, level=logging.INFO)
 
@@ -138,7 +133,7 @@ def generate_response(prompt):
     response = run_flow(prompt,
         endpoint=ENDPOINT,
         tweaks=TWEAKS,
-        application_token=config['langflow']['token']
+        application_token=st.secrets.langflow.token
     )
     # print("#################")
     # print(prompt)
