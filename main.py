@@ -15,7 +15,6 @@ logging.basicConfig(format=log_format, stream=sys.stdout, level=logging.INFO)
 
 BASE_API_URL = "https://api.langflow.astra.datastax.com"
 LANGFLOW_ID = "72db4f3e-fa1d-4284-8e2e-0ae9d6bd4f99"
-FLOW_ID = "f70e46ce-e1e5-4084-9e11-66aa1c3b1750"
 TWEAKS = {
     "APIRequest-oT7rL": {},
     "CreateData-hHbHt": {},
@@ -61,8 +60,11 @@ def main():
         with st.chat_message("assistant",avatar=f"{BASE_AVATAR_URL}/bartender-64px.png"):
             message_placeholder = st.empty()
             with st.spinner(text="Thinking..."):
-                assistant_response = generate_response(prompt)
+                assistant_response = generate_response(prompt, flow_id= st.secrets.text_to_text.FLOW_ID, token=st.secrets.text_to_text.TOKEN)
+                assistant_response_audio = generate_response(assistant_response, flow_id=st.secrets.text_to_audio.FLOW_ID,
+                                                       token=st.secrets.text_to_audio.TOKEN)
                 handle_response(message_placeholder, assistant_response)
+                handle_response(message_placeholder, assistant_response_audio)
 
 def isBase64(sb):
     try:
@@ -78,6 +80,7 @@ def isBase64(sb):
         return False
 
 def handle_response(message_placeholder, assistant_response):
+    print(assistant_response)
     b64 = isBase64(assistant_response)
     if b64:
         md = text_to_speech(assistant_response)
@@ -98,20 +101,11 @@ def handle_response(message_placeholder, assistant_response):
 
 
 def run_flow(message: str,
-             endpoint: str,
+             api_url: str,
              output_type: str = "chat",
              input_type: str = "chat",
              tweaks: Optional[dict] = None,
              application_token: Optional[str] = None) -> dict:
-    """
-    Run a flow with a given message and optional tweaks.
-
-    :param message: The message to send to the flow
-    :param endpoint: The ID or the endpoint name of the flow
-    :param tweaks: Optional tweaks to customize the flow
-    :return: The JSON response from the flow
-    """
-    api_url = f"{BASE_API_URL}/lf/{LANGFLOW_ID}/api/v1/run/{FLOW_ID}"
 
     payload = {
         "input_value": message,
@@ -127,20 +121,19 @@ def run_flow(message: str,
     response = requests.post(api_url, json=payload, headers=headers)
     return response.json()
 
-def generate_response(prompt):
-    # logging.info(f"{prompt}")
-    # inputs = {"question": prompt}
+def generate_response(prompt, flow_id, token):
+    api_url = f"{BASE_API_URL}/lf/{LANGFLOW_ID}/api/v1/run/{flow_id}"
     response = run_flow(prompt,
-        endpoint=ENDPOINT,
+        api_url=api_url,
         tweaks=TWEAKS,
-        application_token=st.secrets.langflow.token
+        application_token=token
     )
     # print("#################")
     # print(prompt)
     # print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
     # print("#################")
     try:
-        # logging.info(f"answer: {response['result']['answer']}")
+        # logging.info(f"Response: {response}")
         return response['outputs'][0]['outputs'][0]['results']['message']['data']['text']
         # return json.dumps(response, indent=2)
     except Exception as exc:
