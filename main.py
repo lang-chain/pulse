@@ -62,10 +62,12 @@ def main():
             message_placeholder = st.empty()
             with st.spinner(text="Thinking..."):
                 assistant_response = generate_response(prompt, flow_id= st.secrets.text_to_text.FLOW_ID, token=st.secrets.text_to_text.TOKEN)
-                assistant_response_audio = generate_response(assistant_response, flow_id=st.secrets.text_to_audio.FLOW_ID,
-                                                       token=st.secrets.text_to_audio.TOKEN)
-                handle_response(message_placeholder, assistant_response)
-                handle_response(message_placeholder, assistant_response_audio)
+                if assistant_response is not None:
+                    handle_response(message_placeholder, assistant_response)
+                    with st.spinner(text="Converting..."):
+                        assistant_response_audio = generate_response(assistant_response, flow_id=st.secrets.text_to_audio.FLOW_ID, token=st.secrets.text_to_audio.TOKEN)
+                        if assistant_response_audio is not None:
+                            handle_response(message_placeholder, assistant_response_audio)
 
 def isBase64(sb):
     try:
@@ -81,7 +83,6 @@ def isBase64(sb):
         return False
 
 def handle_response(message_placeholder, assistant_response):
-    print(assistant_response)
     b64 = isBase64(assistant_response)
     if b64:
         md = text_to_speech(assistant_response)
@@ -119,27 +120,33 @@ def run_flow(message: str,
         payload["tweaks"] = tweaks
     if application_token:
         headers = {"Authorization": "Bearer " + application_token, "Content-Type": "application/json"}
-    response = requests.post(api_url, json=payload, headers=headers)
-    return response.json()
+    return requests.post(api_url, json=payload, headers=headers)
 
 def generate_response(prompt, flow_id, token):
     api_url = f"{BASE_API_URL}/lf/{LANGFLOW_ID}/api/v1/run/{flow_id}"
-    response = run_flow(prompt,
-        api_url=api_url,
-        tweaks=TWEAKS,
-        application_token=token
-    )
+    try:
+        response = run_flow(prompt,
+            api_url=api_url,
+            tweaks=TWEAKS,
+            application_token=token
+        )
+    except requests.Timeout:
+        return "Request Time out"
+
+    response_json = response.json()
     # print("#################")
-    # print(prompt)
-    # print(response['outputs'][0]['outputs'][0]['results']['message']['data']['text'])
+    if "errors" in response_json:
+        st.error(json.dumps(response_json['errors']))
+        return
     # print("#################")
     try:
         # logging.info(f"Response: {response}")
-        return response['outputs'][0]['outputs'][0]['results']['message']['data']['text']
+        return response_json['outputs'][0]['outputs'][0]['results']['message']['data']['text']
         # return json.dumps(response, indent=2)
-    except Exception as exc:
+    except Exception as e:
         # logging.error(f"error: {response}")
-        return "Sorry, there was a problem finding an answer for you."
+        st.error(f"Sorry, there was a problem finding an answer for you.{repr(e)}")
+        return
 
 def autoplay_audio_url(url: str):
     b64 = base64.b64encode(requests.get(url).content)
